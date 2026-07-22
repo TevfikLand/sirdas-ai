@@ -1,0 +1,19 @@
+import { AnimatePresence, motion } from "framer-motion";
+import { CalendarDays, Check, Volume2, VolumeX } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { api } from "../api/client";
+import { AnalysisModal } from "../components/AnalysisModal";
+import { DiaryBook } from "../components/DiaryBook";
+import { useAuth } from "../context/AuthContext";
+import type { DiaryEntry } from "../types";
+
+const today = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Istanbul" });
+export function DiaryPage() {
+  const { session }=useAuth(); const isAdmin=session?.role==="admin"; const [pages,setPages]=useState([""]); const [entry,setEntry]=useState<DiaryEntry|null>(null); const [status,setStatus]=useState("Hazır"); const [sound,setSound]=useState(()=>localStorage.getItem("sirdas-sound")!=="off"); const [analysisOpen,setAnalysisOpen]=useState(false); const loaded=useRef(false); const entryUpdatedAt=useRef<string>();
+  const endpoint=useMemo(()=>isAdmin?`/admin/diary/${today}`:`/entries/${today}`,[isAdmin]);
+  useEffect(()=>{api<DiaryEntry|null>(endpoint).then(value=>{if(value){setEntry(value);setPages(value.content.pages);entryUpdatedAt.current=value.updatedAt;}loaded.current=true;}).catch(()=>{setStatus("Günlük yüklenemedi");loaded.current=true;});},[endpoint]);
+  useEffect(()=>{if(!loaded.current)return; setStatus("Kaydediliyor..."); const timer=setTimeout(async()=>{try{const body=isAdmin?{content:{version:1,pages}}:{content:{version:1,pages},expectedUpdatedAt:entryUpdatedAt.current}; const saved=await api<DiaryEntry>(endpoint,{method:"PUT",body:JSON.stringify(body)});entryUpdatedAt.current=saved.updatedAt;setEntry(saved);setStatus("Kaydedildi");}catch(error){setStatus((error as Error).message);}},800);return()=>clearTimeout(timer);},[pages,endpoint,isAdmin]);
+  const finish=async()=>{setStatus("Gün tamamlanıyor...");try{const saved=await api<DiaryEntry>(endpoint,{method:"PUT",body:JSON.stringify(isAdmin?{content:{version:1,pages}}:{content:{version:1,pages},expectedUpdatedAt:entryUpdatedAt.current})});entryUpdatedAt.current=saved.updatedAt; if(isAdmin){setStatus("Özel günlüğünüz kaydedildi");return;} const result=await api<{entry:DiaryEntry;ai:{status:string}}>(`/entries/${today}/finish`,{method:"POST"});setEntry(result.entry);entryUpdatedAt.current=result.entry.updatedAt;setStatus(result.ai.status==="disabled"?"Analiz servisi henüz etkin değil. Günlüğünüz güvenle kaydedildi.":"Analiz hazır");}catch(error){setStatus((error as Error).message);}};
+  const toggleSound=()=>{const next=!sound;setSound(next);localStorage.setItem("sirdas-sound",next?"on":"off");};
+  return <div className="diary-page"><header className="page-header"><div><span className="eyebrow">{isAdmin?"Yönetici özel alanı":"Bugünün sayfası"}</span><h1>{new Intl.DateTimeFormat("tr-TR",{dateStyle:"long"}).format(new Date())}</h1></div><div className="diary-tools"><span className="save-status"><Check size={15}/>{status}</span><button className="icon-button" onClick={toggleSound} title={sound?"Sayfa sesini kapat":"Sayfa sesini aç"}>{sound?<Volume2/>:<VolumeX/>}</button></div></header><DiaryBook pages={pages} onChange={setPages} sound={sound}/><div className="diary-bottom"><span><CalendarDays/> {pages.reduce((n,p)=>n+p.length,0).toLocaleString("tr-TR")} karakter</span><button className="button primary" onClick={finish}>{isAdmin?"Günlüğü kaydet":"Günü bitir"}</button></div><AnimatePresence>{entry?.analysis&&<motion.button className="mood-egg" initial={{scale:0,y:20}} animate={{scale:1,y:0,rotate:[-2,2,-2]}} transition={{rotate:{repeat:Infinity,duration:2.4}}} onClick={()=>setAnalysisOpen(true)}><img src="/mood-egg.png" alt="Sırdaş AI analiz yumurtası"/><span>Yapay zeka analiz ve önerileriniz taze çıktı!</span></motion.button>}</AnimatePresence>{analysisOpen&&entry?.analysis&&<AnalysisModal analysis={entry.analysis} onClose={()=>setAnalysisOpen(false)}/>}</div>;
+}

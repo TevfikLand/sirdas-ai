@@ -1,0 +1,25 @@
+import express from "express";
+import cookieParser from "cookie-parser";
+import cors from "cors";
+import helmet from "helmet";
+import { env } from "./config/env.js";
+import { requestLogger, errorHandler } from "./middleware/errors.js";
+import { accountRouter } from "./routes/account.routes.js";
+import { adminRouter } from "./routes/admin.routes.js";
+import { authRouter } from "./routes/auth.routes.js";
+import { entriesRouter } from "./routes/entries.routes.js";
+
+export const app = express();
+app.disable("x-powered-by");
+app.use(helmet({ crossOriginResourcePolicy: { policy: "same-site" } }));
+app.use(cors({ origin: env.FRONTEND_ORIGIN, credentials: true, methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"] }));
+app.use(express.json({ limit: "256kb" }));
+app.use(cookieParser());
+app.use(requestLogger);
+app.get("/api/health", (_req, res) => res.json({ status: "ok", ai: env.AI_PROVIDER }));
+app.get("/api/config/public", (_req, res) => res.json({ privacyContactEmail: env.PRIVACY_CONTACT_EMAIL, kvkkVersion: "2026-01", aiEnabled: env.AI_PROVIDER !== "disabled" }));
+app.use("/api/auth", authRouter);
+app.use("/api/entries", entriesRouter);
+app.use("/api/account", accountRouter);
+app.use("/api/admin", adminRouter);
+app.use(errorHandler);

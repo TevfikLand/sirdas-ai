@@ -1,0 +1,11 @@
+process.env.NODE_ENV = "test";
+process.env.PORT = "4001";
+process.env.DATABASE_URL = "file:./test.db";
+process.env.FRONTEND_ORIGIN = "http://localhost:5173";
+process.env.JWT_SECRET = "test-user-secret-that-is-at-least-32-characters";
+process.env.ADMIN_JWT_SECRET = "test-admin-secret-that-is-at-least-32-characters";
+process.env.ENCRYPTION_KEY = "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=";
+process.env.ADMIN_USERNAME = "yonetici";
+process.env.ADMIN_PASSWORD_HASH = "$2b$12$8gQZxOBRXcQ1hBctj3CzYevzG6A6SXyOYXSmR5P4IxHfH3aqF38hK";
+process.env.PRIVACY_CONTACT_EMAIL = "kvkk@example.com";
+process.env.AI_PROVIDER = "disabled";

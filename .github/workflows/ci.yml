@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NODE_ENV: test
+      DATABASE_URL: file:./ci.db
+      FRONTEND_ORIGIN: http://localhost:5173
+      JWT_SECRET: ci-user-secret-that-is-at-least-32-characters
+      ADMIN_JWT_SECRET: ci-admin-secret-that-is-at-least-32-characters
+      ENCRYPTION_KEY: AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=
+      ADMIN_USERNAME: ci-admin
+      ADMIN_PASSWORD_HASH: $2b$12$8gQZxOBRXcQ1hBctj3CzYevzG6A6SXyOYXSmR5P4IxHfH3aqF38hK
+      PRIVACY_CONTACT_EMAIL: privacy@example.com
+      AI_PROVIDER: disabled
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm --filter @sirdas-ai/backend typecheck && pnpm --filter @sirdas-ai/frontend typecheck
+
+      - name: Test
+        run: pnpm -r test
+
+      - name: Build
+        run: pnpm -r build

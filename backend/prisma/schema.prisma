@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String           @id @default(cuid())
+  email          String           @unique
+  passwordHash   String
+  kvkkVersion    String
+  kvkkAcceptedAt DateTime
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  entries        DiaryEntry[]
+  sessions       RefreshSession[]
+}
+
+model RefreshSession {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  familyId  String
+  role      String
+  userId    String?
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  user      User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([familyId])
+  @@index([userId])
+}
+
+model DiaryEntry {
+  id                String   @id @default(cuid())
+  userId            String
+  entryDate         String
+  encryptedContent  String
+  contentIv         String
+  contentTag        String
+  contentLength     Int
+  version           Int      @default(1)
+  finalizedAt       DateTime?
+  encryptedAnalysis String?
+  analysisIv        String?
+  analysisTag       String?
+  analysisStatus    String   @default("idle")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, entryDate])
+  @@index([entryDate])
+}
+
+model AdminDiaryEntry {
+  id               String   @id @default(cuid())
+  adminSubject     String
+  entryDate        String
+  encryptedContent String
+  contentIv        String
+  contentTag       String
+  contentLength    Int
+  version          Int      @default(1)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([adminSubject, entryDate])
+}
+
+model AiMetric {
+  id         String   @id @default(cuid())
+  status     String
+  provider   String
+  durationMs Int
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model AdminAuditLog {
+  id           String   @id @default(cuid())
+  adminSubject String
+  sessionId    String
+  action       String
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+}

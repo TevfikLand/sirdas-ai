@@ -1,0 +1,50 @@
+.css-book {
+  width: min(940px, 100%);
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  perspective: 1600px;
+  overflow: hidden;
+}
+
+.css-book .paper-page {
+  width: 100%;
+  height: 100%;
+  transition: transform 300ms ease, filter 300ms ease;
+}
+
+.css-book .paper-page:first-child {
+  border-right: 1px solid rgba(70, 49, 31, 0.18);
+}
+
+.css-book.is-turning-next .paper-page:last-child {
+  transform: perspective(1200px) rotateY(-14deg);
+  transform-origin: left center;
+  filter: brightness(0.9);
+}
+
+.css-book.is-turning-prev .paper-page:first-child {
+  transform: perspective(1200px) rotateY(14deg);
+  transform-origin: right center;
+  filter: brightness(0.9);
+}
+
+.mobile-hidden-page {
+  visibility: hidden;
+}
+
+@media (max-width: 719px) {
+  .css-book {
+    grid-template-columns: 1fr;
+  }
+
+  .css-book .paper-page:nth-child(2) {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .css-book .paper-page {
+    transition: none;
+  }
+}
